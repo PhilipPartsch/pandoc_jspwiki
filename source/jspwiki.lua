@@ -14,8 +14,9 @@ function Reader(input, reader_opts)
   local blocks = List{}
   local list_stack = {}  -- für verschachtelte Listen
 
-
+  print(">>> TYPE", type(input), input.read)
   local text = input:read("*all")
+  print(">>> INPUT CONTENT:\n" .. text)
   text = text:gsub("\r\n", "\n") -- Normalize line endings
   for line in text:gmatch("([^\n]*)\n?") do
     -- Trim leere Zeilen
