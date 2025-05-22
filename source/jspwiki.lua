@@ -148,9 +148,9 @@ G = P{ "Doc",
             / pandoc.SoftBreak ;
   LineBreak = P"\\\\"
             / pandoc.LineBreak ;
-  Code = P"{{{"
-       * C((1 - P"}}}")^0)
-       * P"}}}"
+  Code = P"{{"
+       * C((1 - P"}}")^0)
+       * P"}}"
        / trim / pandoc.Code ;
   Link = P"[["
        * C((1 - (P"]]" + P"|"))^0)

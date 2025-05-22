@@ -58,11 +58,11 @@ jobs:
       with:
         args: >- # allows you to break string into multiple lines
           --from=./source/jspwiki.lua
-          --to=rst
           --columns=100
           --list-tables=true
           --extract-media ./transformed
-          --output=./transformed/bold_italic.rst
+          --write=native
+          --output=./transformed/bold_italic.native
           ./tests/bold_italic.wiki
     - name: Archive sphinx public folder
       uses: actions/upload-artifact@v4
