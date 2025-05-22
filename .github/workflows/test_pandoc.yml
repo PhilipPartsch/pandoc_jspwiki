@@ -54,6 +54,7 @@ jobs:
       with:
         args: >- # allows you to break string into multiple lines
           --standalone
+          --from=./source/jspwiki.lua
           --columns=100
           --list-tables=true
           --extract-media ./transformed
