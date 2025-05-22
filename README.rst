@@ -1,4 +1,6 @@
-# pandoc_jspwiki
+#########################
+jspwiki raeder for pandoc
+#########################
 
 Here I maintain a implmentation of
 
