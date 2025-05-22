@@ -50,10 +50,9 @@ jobs:
       run: |
         python -m pip install -r ./sphinx-config/requirements.txt
     - name: run pandoc
-      uses: docker://pandoc/core:3.5
+      uses: docker://pandoc/core:3.7
       with:
         args: >- # allows you to break string into multiple lines
-          --standalone
           --from=./source/jspwiki.lua
           --columns=100
           --list-tables=true
