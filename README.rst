@@ -1,5 +1,5 @@
 #########################
-jspwiki raeder for pandoc
+jspwiki reader for pandoc
 #########################
 
 Here I maintain a implmentation of
