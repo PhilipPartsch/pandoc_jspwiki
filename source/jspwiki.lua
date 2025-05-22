@@ -14,8 +14,10 @@ function Reader(input, reader_opts)
   local blocks = List{}
   local list_stack = {}  -- für verschachtelte Listen
 
-  input = input:gsub("\r\n", "\n") -- Normalize line endings
-  for line in input:gmatch("([^\n]*)\n?") do
+
+  local text = input:read("*all")
+  text = text:gsub("\r\n", "\n") -- Normalize line endings
+  for line in text:gmatch("([^\n]*)\n?") do
     -- Trim leere Zeilen
     local trimmed = line:match("^%s*(.-)%s*$")
     if trimmed == '' then
