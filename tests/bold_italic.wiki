@@ -1,1 +1,1 @@
-This is __bold__ und ''italic''.
+This is __bold__ and ''italic''.

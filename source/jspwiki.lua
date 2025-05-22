@@ -75,11 +75,11 @@ G = P{ "Doc",
          * Ct((V"Inline" - endequals)^1)
          * endequals
          / pandoc.Header;
-  CodeBlock = P"{{{"
+  CodeBlock = P"{{"
             * blankline
-            * C((1 - (newline * P"}}}"))^0)
+            * C((1 - (newline * P"}}"))^0)
             * newline
-            * P"}}}"
+            * P"}}"
             / pandoc.CodeBlock;
   Placeholder = P"<<<"
               * C(P(1) - P">>>")^0
