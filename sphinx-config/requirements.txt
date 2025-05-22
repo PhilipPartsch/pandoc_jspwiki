@@ -1,0 +1,5 @@
+sphinx
+sphinx-needs
+matplotlib
+sphinx-immaterial
+sphinx-rtd-theme
