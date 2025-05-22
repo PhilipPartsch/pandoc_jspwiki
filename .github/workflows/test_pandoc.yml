@@ -57,7 +57,7 @@ jobs:
       uses: docker://pandoc/core:3.7
       with:
         args: >- # allows you to break string into multiple lines
-          -f jspwiki.lua
+          -f /home/runner/work/pandoc_jspwiki/pandoc_jspwiki/jspwiki.lua
           --to=rst
           --columns=100
           --list-tables=true
