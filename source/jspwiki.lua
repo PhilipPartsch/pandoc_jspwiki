@@ -1,65 +1,107 @@
--- jspwiki.lua
--- Pandoc Lua Reader für JSPWiki-Markup
+local lpeg = require("lpeg")
+local P, R, S, V, C, Ct, Cmt, Cg, Cb = lpeg.P, lpeg.R, lpeg.S, lpeg.V, lpeg.C, lpeg.Ct, lpeg.Cmt, lpeg.Cg, lpeg.Cb
 
-local List = require 'pandoc.List'
+local pandoc = require("pandoc")
+local List = require("pandoc.List")
 
--- Hilfsfunktion: Inline-Formatierung
-local function parse_inline(text)
-  local elems = pandoc.read(text, 'markdown').blocks[1].content
-  return elems
+-- Utility patterns
+local newline = P("\r")^-1 * P("\n")
+local space = S(" \t")^0
+local non_newline = (1 - newline)
+local blankline = space * newline
+
+-- Inline patterns
+local function make_inline_parser()
+  local any = P(1)
+  local str = (1 - S("'\n_"))^1
+
+  local bold = P("__") * C((1 - P("__"))^1) * P("__") / function(s)
+    return pandoc.Strong{pandoc.Str(s)}
+  end
+
+  local italic = P("''") * C((1 - P("''"))^1) * P("''") / function(s)
+    return pandoc.Emph{pandoc.Str(s)}
+  end
+
+  local word = C((1 - S(" \t\n"))^1) / function(s)
+    return pandoc.Str(s)
+  end
+
+  local space = P(" ") / function() return pandoc.Space() end
+
+  local inline = Ct((bold + italic + word + space)^1)
+  return inline
 end
 
--- Hauptfunktion für das Parsen
-function Reader(input, reader_opts)
+local inline = make_inline_parser()
+
+-- Block parsing
+
+local function parse_blocks(text)
   local blocks = List{}
-  local list_stack = {}  -- für verschachtelte Listen
+  local lines = {}
 
-  print(">>> TYPE", type(input), input.read)
-  local text = input
-  print(">>> INPUT CONTENT:\n" .. text)
-  text = text:gsub("\r\n", "\n") -- Normalize line endings
-  for line in text:gmatch("([^\n]*)\n?") do
-    -- Trim leere Zeilen
-    local trimmed = line:match("^%s*(.-)%s*$")
-    if trimmed == '' then
-      -- Leere Zeile = Absatzende oder Blocktrennung
-      if #list_stack > 0 then
-        for _, list in ipairs(list_stack) do
-          blocks:insert(list)
-        end
-        list_stack = {}
+  for line in text:gmatch("([^\r\n]*)\r?\n?") do
+    table.insert(lines, line)
+  end
+
+  local i = 1
+  while i <= #lines do
+    local line = lines[i]
+
+    -- Headings
+    if line:match("^!!!") then
+      local content = line:match("^!!!%s*(.+)")
+      blocks:insert(pandoc.Header(1, inline:match(content)))
+    elseif line:match("^!!") then
+      local content = line:match("^!!%s*(.+)")
+      blocks:insert(pandoc.Header(2, inline:match(content)))
+    elseif line:match("^!") then
+      local content = line:match("^!%s*(.+)")
+      blocks:insert(pandoc.Header(3, inline:match(content)))
+
+    -- Unordered List
+    elseif line:match("^%*") then
+      local items = {}
+      while i <= #lines and lines[i]:match("^%*") do
+        local content = lines[i]:match("^%*+%s*(.+)")
+        table.insert(items, { pandoc.Plain(inline:match(content)) })
+        i = i + 1
       end
-    elseif trimmed:match("^!!!") then
-      local content = trimmed:match("^!!!%s*(.+)$")
-      blocks:insert(pandoc.Header(1, parse_inline(content)))
-    elseif trimmed:match("^!!") then
-      local content = trimmed:match("^!!%s*(.+)$")
-      blocks:insert(pandoc.Header(2, parse_inline(content)))
-    elseif trimmed:match("^!") then
-      local content = trimmed:match("^!%s*(.+)$")
-      blocks:insert(pandoc.Header(3, parse_inline(content)))
-    elseif trimmed:match("^%*+") then
-      -- Ungeordnete Liste
-      local level, content = trimmed:match("^(%*+)%s*(.+)$")
-      local depth = #level
-      list_stack[depth] = list_stack[depth] or pandoc.BulletList({})
-      table.insert(list_stack[depth], { pandoc.Plain(parse_inline(content)) })
-    elseif trimmed:match("^#+") then
-      -- Geordnete Liste
-      local level, content = trimmed:match("^(#+)%s*(.+)$")
-      local depth = #level
-      list_stack[depth] = list_stack[depth] or pandoc.OrderedList({})
-      table.insert(list_stack[depth], { pandoc.Plain(parse_inline(content)) })
-    else
-      -- Standardabsatz
-      blocks:insert(pandoc.Para(parse_inline(trimmed)))
+      blocks:insert(pandoc.BulletList(items))
+      goto continue
+
+    -- Ordered List
+    elseif line:match("^#") then
+      local items = {}
+      while i <= #lines and lines[i]:match("^#") do
+        local content = lines[i]:match("^#+%s*(.+)")
+        table.insert(items, { pandoc.Plain(inline:match(content)) })
+        i = i + 1
+      end
+      blocks:insert(pandoc.OrderedList(items))
+      goto continue
+
+    -- Paragraph
+    elseif line:match("%S") then
+      local para = line
+      -- Merge following lines until blank
+      while i + 1 <= #lines and lines[i + 1]:match("%S") do
+        i = i + 1
+        para = para .. " " .. lines[i]
+      end
+      blocks:insert(pandoc.Para(inline:match(para)))
     end
+
+    ::continue::
+    i = i + 1
   end
 
-  -- Noch offene Listen einfügen
-  for _, list in ipairs(list_stack) do
-    blocks:insert(list)
-  end
+  return blocks
+end
 
+function Reader(input, reader_opts)
+  local text = input
+  local blocks = parse_blocks(text)
   return pandoc.Pandoc(blocks)
 end
