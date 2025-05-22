@@ -1,0 +1,1 @@
+[HomePage|internal link] and [http://google.com|external link]
