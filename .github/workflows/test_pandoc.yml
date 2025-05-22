@@ -50,6 +50,9 @@ jobs:
       if: False
       run: |
         python -m pip install -r ./sphinx-config/requirements.txt
+    - name: ls -al
+      run: |
+        ls -al
     - name: run pandoc
       uses: docker://pandoc/core:3.7
       with:
