@@ -1,5 +1,7 @@
 This is __bold__ and ''italic''.
 This is __''bold and italic''__ and ''__italic and bold__''.
+
 This is ^^superscript^^ and ,,subscript,,.
-This is ^^__superscript bold__^^ and '',,__italic subscript,,''.
+This is ^^__superscript bold__^^ and '',,__italic and bold subscript__,,''.
+
 This is {{monospaced font}}.
