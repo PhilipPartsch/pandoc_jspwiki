@@ -7,7 +7,7 @@ local P, S, R, Cf, Cc, Ct, V, Cs, Cg, Cb, B, C, Cmt =
   lpeg.Cs, lpeg.Cg, lpeg.Cb, lpeg.B, lpeg.C, lpeg.Cmt
 
 local whitespacechar = S(" \t\r\n")
-local specialchar = S("/*~[]\\{}|_'")
+local specialchar = S("/*~[]\\{}|_',^")
 local wordchar = (1 - (whitespacechar + specialchar))
 local spacechar = S(" \t")
 local newline = P"\r"^-1 * P"\n"
@@ -123,6 +123,8 @@ G = P{ "Doc",
              / function(ils) return { pandoc.Plain(ils) } end ;
   Inline = V"Emph"
          + V"Strong"
+         + V"Subscript"
+         + V"Superscript"
          + V"LineBreak"
          + V"Link"
          + V"URL"
@@ -152,9 +154,9 @@ G = P{ "Doc",
        * C((1 - P"}}")^0)
        * P"}}"
        / trim / pandoc.Code ;
-  Link = P"[["
-       * C((1 - (P"]]" + P"|"))^0)
-       * (P"|" * Ct((V"Inline" - P"]]")^1))^-1 * P"]]"
+  Link = P"["
+       * C((1 - (P"]" + P"|"))^0)
+       * (P"|" * Ct((V"Inline" - P"]")^1))^-1 * P"]"
        / function(url, desc)
            local txt = desc or {pandoc.Str(url)}
            return pandoc.Link(txt, url)
@@ -183,6 +185,14 @@ G = P{ "Doc",
          * Ct((V"Inline" -P"__")^1)
          * P"__"
          / pandoc.Strong ;
+  Subscript = P",,"
+         * Ct((V"Inline" -P",,")^1)
+         * P",,"
+         / pandoc.Subscript ;
+  Superscript = P"^^"
+         * Ct((V"Inline" -P"^^")^1)
+         * P"^^"
+         / pandoc.Superscript ;
 }
 
 function Reader(input, reader_options)

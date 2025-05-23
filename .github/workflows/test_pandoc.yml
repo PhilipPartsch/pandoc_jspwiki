@@ -61,9 +61,9 @@ jobs:
           --columns=100
           --list-tables=true
           --extract-media ./transformed
-          --write=native
-          --output=./transformed/bold_italic.native
-          ./tests/bold_italic.wiki
+          --write=json
+          --output=./transformed/font_style.json
+          ./tests/font_style.wiki
     - name: Archive sphinx public folder
       uses: actions/upload-artifact@v4
       with:
