@@ -58,12 +58,24 @@ jobs:
       with:
         args: >- # allows you to break string into multiple lines
           --from=./source/jspwiki.lua
+          --extract-media ./transformed
+          --write=native
+          --output=./transformed/font_style.native
+          ./tests/font_style.wiki
+    - name: run pandoc rst
+      uses: docker://pandoc/core:3.7
+      with:
+        args: >- # allows you to break string into multiple lines
           --columns=100
           --list-tables=true
-          --extract-media ./transformed
-          --write=json
-          --output=./transformed/font_style.json
-          ./tests/font_style.wiki
+          --output=./transformed/font_style.rst
+          ./transformed/font_style.native
+    - name: run pandoc html
+      uses: docker://pandoc/core:3.7
+      with:
+        args: >- # allows you to break string into multiple lines
+          --output=./transformed/font_style.html
+          ./transformed/font_style.native
     - name: Archive sphinx public folder
       uses: actions/upload-artifact@v4
       with:

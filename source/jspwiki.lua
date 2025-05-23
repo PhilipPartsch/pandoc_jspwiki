@@ -113,7 +113,7 @@ G = P{ "Doc",
              * spacechar^0
              * newline ;
   HeaderCell = cellsep
-             * P"="
+             * P"|"
              * spacechar^0
              * Ct((V"Inline" - (newline + cellsep))^0)
              / function(ils) return { pandoc.Plain(ils) } end ;
@@ -161,11 +161,11 @@ G = P{ "Doc",
            local txt = desc or {pandoc.Str(url)}
            return pandoc.Link(txt, url)
          end ;
-  Image = P"{{"
+  Image = P"[{"
         * #-P"{"
         * C((1 - (S"}"))^0)
-        * (P"|" * Ct((V"Inline" - P"}}")^1))^-1
-        * P"}}"
+        * (P"|" * Ct((V"Inline" - P"}]")^1))^-1
+        * P"}]"
         / function(url, desc)
             local txt = desc or ""
             return pandoc.Image(txt, url)
