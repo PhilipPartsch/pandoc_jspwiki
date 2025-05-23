@@ -53,6 +53,10 @@ jobs:
     - name: ls -al
       run: |
         ls -al
+    - name: Install pandoc
+      uses: pandoc/actions/setup@v1
+    - name: Run pandoc
+      run: pandoc --version
     - name: run pandoc
       uses: docker://pandoc/core:3.7
       with:
