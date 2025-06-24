@@ -7,7 +7,7 @@ local P, S, R, Cf, Cc, Ct, V, Cs, Cg, Cb, B, C, Cmt =
   lpeg.Cs, lpeg.Cg, lpeg.Cb, lpeg.B, lpeg.C, lpeg.Cmt
 
 local whitespacechar = S(" \t\r\n")
-local specialchar = S("/*~[]\\{}|_',^")
+local specialchar = S("/*~[]\\{}|_',^%()!#")
 local wordchar = (1 - (whitespacechar + specialchar))
 local spacechar = S(" \t")
 local newline = P"\r"^-1 * P"\n"
@@ -60,8 +60,11 @@ G = P{ "Doc",
           + V"HorizontalRule"
           + V"CodeBlock"
           + V"List"
+          + V"table_extension"
           + V"Table"
-          + V"Para") ;
+          + V"not_supported_extension"
+          + V"Para"
+          ) ;
   Para = Ct(V"Inline"^1)
        * newline
        / pandoc.Para ;
@@ -121,21 +124,39 @@ G = P{ "Doc",
              * spacechar^0
              * Ct((V"Inline" - (newline + cellsep))^0)
              / function(ils) return { pandoc.Plain(ils) } end ;
+  table_newline = blankline^0
+                * V"Table";
+  table_extension = P"[{Table"
+            * C((1 - newline)^1)
+            -- * C((1 - (P"}]"))^0)
+            * Ct((V"table_newline" - P"}]")^0)
+            * P"}]"
+            / function(table_attributes, table_content)
+                --return pandoc.CodeBlock(table_content)
+                -- return table_content[1]
+                return pandoc.CodeBlock(table_attributes)
+              end ;
+  not_supported_extension = C(P"[{" * (1 - (P"}]"))^0 * P"}]")
+            / pandoc.CodeBlock;
   Inline = V"Emph"
          + V"Strong"
          + V"Subscript"
          + V"Superscript"
+         + V"Underline"
          + V"LineBreak"
-         + V"Link"
          + V"URL"
-         + V"Image"
+         + V"external_Image"
+         + V"internal_Image"
+         + V"Link"
          + V"Str"
          + V"Space"
          + V"SoftBreak"
-         + V"Escaped"
          + V"Placeholder"
          + V"Code"
-         + V"Special" ;
+         + V"Color"
+         + V"background_Color"
+         + V"Escaped"
+         + V"Special";
   Str = wordchar^1
       / pandoc.Str;
   Escaped = P"~"
@@ -153,23 +174,37 @@ G = P{ "Doc",
   Code = P"{{"
        * C((1 - P"}}")^0)
        * P"}}"
-       / trim / pandoc.Code ;
-  Link = P"["
-       * C((1 - (P"]" + P"|"))^0)
-       * (P"|" * Ct((V"Inline" - P"]")^1))^-1 * P"]"
-       / function(url, desc)
-           local txt = desc or {pandoc.Str(url)}
-           return pandoc.Link(txt, url)
-         end ;
-  Image = P"[{"
+       / trim / pandoc.CodeBlock ;
+  external_Image = P"[{Image "
         * #-P"{"
-        * C((1 - (S"}"))^0)
-        * (P"|" * Ct((V"Inline" - P"}]")^1))^-1
+        * C((1 - (P"}" + P"#"))^0)
+        * (P"#" * Ct((V"Inline" - P"}]")^1))^-1
         * P"}]"
         / function(url, desc)
-            local txt = desc or ""
+            local txt = ""
             return pandoc.Image(txt, url)
           end ;
+  internal_Image = P"[!"
+        * #-P"!"
+        * C((1 - (P"!" + P"#"))^0)
+        * (P"#" * Ct((V"Inline" - P"!]")^1))^-1
+        * P"!]"
+        / function(url, desc)
+            local txt = ""
+            return pandoc.Image(txt, url)
+          end ;
+  Link = (P"[" - (P"[{" + P"[!"))
+       * C((1 - (P"]" + P"|"))^0)
+       * (P"|" * C((1 - (P"]"))^0))^-1
+       * P"]"
+       / function(alias, link_url) -- [alias|link]
+           local txt = alias
+           local url = alias
+           if link_url then
+             url = tostring(link_url)
+           end
+           return pandoc.Link(alias, url)
+         end ;
   URL = P"http"
       * P"s"^-1
       * P":"
@@ -193,6 +228,28 @@ G = P{ "Doc",
          * Ct((V"Inline" -P"^^")^1)
          * P"^^"
          / pandoc.Superscript ;
+  Underline = P"%%(text-decoration:underline;)"
+           * Ct((V"Inline" - P"%!")^1)
+           * P"%!"
+           / pandoc.Underline ;
+  Color = P"%%(color:"
+        * C((1 - (P";)"))^0)
+        * P";)"
+        * Ct((V"Inline" - P"%!")^0)
+        -- * C((1 - (P"%!"))^0)
+        * P"%!"
+        / function(attributes, text)
+            return text[1]
+          end ;
+  background_Color = P"%%(background-color:"
+        * C((1 - (P";)"))^0)
+        * P";)"
+        * Ct((V"Inline" - P"%!")^0)
+        -- * C((1 - (P"%!"))^0)
+        * P"%!"
+        / function(attributes, text)
+            return text[1]
+          end ;
 }
 
 function Reader(input, reader_options)
